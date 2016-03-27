@@ -1,0 +1,439 @@
+#include<iostream.h>
+#include<fstream.h>
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+#include<windows.h>
+int Line_Num=1;              //纪录行号 
+int Row_Num=0;               //记录列号
+int i=-1;                     //标识常量插入记录的位置                 
+int j=-1;                     //标识标识符插入记录的位置
+int gz=15;                   //关键字的个数
+struct Table_1
+{
+	int  code;               //存放种别码
+	char word[10];           //字符数组，存放关键字   
+};
+
+struct Table_2
+{
+	char word[10];           //字符数组，存放标识符或常数
+};
+
+struct Table_1 stu[15]={{1,"int"},{ 2,"char"},{3,"float"},{4,"void"},{5,"const"},{6,"for"},
+{7,"if"},{8,"else"},{9,"then"},{10,"while"},{11,"switch"},{12,"break"},
+{13,"begin"},{14,"end"},{15,"main"}};              //关键字表
+
+struct Table_2 Id[200];                            //标识符插入表
+struct Table_2 C[100];                             //常量插入表
+
+/*判断是否是一个字母*/
+int IsLetter(char ch)   
+{
+    if(((ch<='z')&&(ch>='a'))||((ch<='Z')&&(ch>='A'))) 
+		return 1;                                //如果是字母时，返回1
+    else 
+		return 0;                                //如果不是字母时，返回0
+}
+
+
+/*判断是否是一个数字*/
+int IsDigit(char ch)   
+{
+	if(ch>='0'&&ch<='9') 
+		return 1;                                 //如果是数字时，返回1
+	else 
+		return 0;                                 //如果不是数字时，返回0
+}
+
+
+/*将StrToken中的标识符插入标识符表*/
+void InsertId(char  res[10])
+{ 
+	j++;
+	strcpy(Id[j].word,res);
+}
+
+/*将StrToken中的常量插入到常量表中*/
+void InsertC(char  res[10])
+{ 
+	i++;
+	strcpy(C[i].word,res);
+}
+
+/*对strToken中的字符串查找保留字*/
+int Reserve(char res[10])
+{   
+	int k;
+	for(k=0;k<gz;k++)
+	{
+		if((strcmp(stu[k].word,res))==0) 
+			break;		     
+	}
+	if(k<gz)
+		return  stu[k].code;                   //返回关键字种别编码
+	else
+		return 0;
+}
+
+/*对strToken中的字符串查找标示符*/
+int chabiaoshi(char res[10])
+{   
+	int k;
+	for(k=0;k<=j;k++)
+	{
+		if((strcmp(Id[k].word,res))==0) 
+			break;		     
+	}
+	if(k<=j)
+		return  k+1;                   //返回标示符在标示符表中的位置
+	else
+		return 0;
+}
+
+/*对strToken中的字符串查找常量表*/
+int chachangliang(char res[10])
+{   
+	int k;
+	for(k=0;k<=i;k++)
+	{
+		if((strcmp(C[k].word,res))==0) 
+			break;		     
+	}
+	if(k<=i)
+		return  k+1;                   //返回常量在常量表中的位置
+	else
+		return 0;
+}
+
+void main()
+{
+	char ch;
+	int k=0;
+	int flag=0;                              //标志位
+	char strToken[10];                       //输入缓冲区，存放一个单词符号
+	ofstream outstuf;						 //建立文件输出流对象
+	cout<<"是否开始进行词法分析（y/n）："<<endl;
+B:	cin>>ch;
+	if(ch=='y'||ch=='Y')
+		goto A;
+	else if(ch=='n'||ch=='N')
+		exit(0);
+	else
+	{
+		cout<<"没有此命令，请您重新输入："<<endl;
+		goto B;
+	}
+A:  cout<<"词法分析器将开始分析源程序······"<<endl;
+	cout<<endl;
+	outstuf.open("eryuanshi.txt",ios::out);		  //连接文件，指定打开方式
+	if(!outstuf)								
+	{
+		cerr<<"文件不能打开!"<<endl;
+		abort();
+	}
+	ifstream instuf("D:\\chengxu.txt",ios::in); //打开文件 
+    if(!instuf)								
+	{
+		cerr<<"文件不能打开!"<<endl;
+		abort();
+	}
+	instuf.get(ch);
+	Row_Num++;
+	while(ch==' ')  
+	{
+		instuf.get(ch);						  //跳过空格
+		Row_Num++;
+	}
+	while(ch!='@')              
+	{             
+		flag=0;
+		while(ch==' ')  
+		{
+			instuf.get(ch);						  //跳过空格
+			Row_Num++;
+		}
+		if(ch=='\n')
+		{
+			Line_Num++;                       //当出现换行符时，Line_Num++表示行数自加1
+			Row_Num=0;                        //当出现换行符时，Row_Num表示的列数置零
+		}    
+		else if(IsLetter(ch)||ch=='_')                 //对字母进行处理
+		{
+			strToken[k]=ch;
+			k++;
+			instuf.get(ch);
+			Row_Num++;
+			while(IsLetter(ch)||IsDigit(ch))
+			{
+				strToken[k]=ch;
+				k++;
+				instuf.get(ch);
+				Row_Num++;
+			}
+			flag=1;
+			strToken[k]='\0';
+			k=0;
+			if(Reserve(strToken))
+			{
+				cout<<strToken<<"为关键字,种别编码为:"<<Reserve(strToken)<<endl;  //为关键字，输出关键字的种别编码     
+			    outstuf<<"("<<strToken<<",-)   ";
+			}
+			else
+			{
+				if(chabiaoshi(strToken))
+				{
+					cout<<strToken<<"为标示符,在标示符表中的位置为:"<<chabiaoshi(strToken)<<endl;   //为标识符，输出标识符在标示符表中的位置 		     
+				    outstuf<<"(id,"<<chabiaoshi(strToken)<<")   ";
+				}
+				else
+				{
+					InsertId(strToken);
+					outstuf<<"(id,"<<j+1<<")   ";
+				}	
+			}            
+		}
+		else if(IsDigit(ch))                                            //对数字进行处理 
+		{
+			strToken[k]=ch;
+			k++;
+			instuf.get(ch);
+			Row_Num++;
+			while(IsDigit(ch))
+			{
+				strToken[k]=ch;
+				k++;
+				instuf.get(ch);
+				Row_Num++;
+			}
+			if(ch=='.')
+			{
+				strToken[k]=ch;
+				k++;
+				instuf.get(ch);
+				Row_Num++;
+				while(IsDigit(ch))
+				{
+					strToken[k]=ch;
+					k++;
+					instuf.get(ch);
+					Row_Num++;
+				}
+			}
+			flag=1;
+			strToken[k]='\0';
+			k=0;
+			if(chachangliang(strToken))
+			{
+				cout<<strToken<<"为常量,在常量表中的位置为:"<<chachangliang(strToken)<<endl;   //为常量，输出常量在常量表中的位置 		     
+			    outstuf<<"(num,"<<chachangliang(strToken)<<")   ";
+			}
+			else
+			{
+				InsertC(strToken);
+				outstuf<<"(num,"<<i+1<<")   ";
+			}
+		}
+		else switch(ch) 
+		{ 
+case'+' :
+	{  
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(+=,-)   ";
+		else
+		{
+			outstuf<<"(+,-)   ";
+			flag=1;
+		}
+	}break;
+case'-' :
+	{  
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(-=,-)   ";
+		else
+		{
+			outstuf<<"(-,-)   ";
+			flag=1;
+		}
+	}break;
+case'*' :
+	{  
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(*=,-)   ";
+		else
+		{
+			outstuf<<"(*,-)   ";
+			flag=1;
+		}
+	}break;
+case'%' :
+	{  
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(%=,-)   ";
+		else
+		{
+			outstuf<<"(%,-)   ";
+			flag=1;
+		}
+	}break;
+case'(' :outstuf<<"((,-)   ";break;
+case')' :outstuf<<"(),-)   ";break;
+case'[' :outstuf<<"([,-)   ";break;
+case']' :outstuf<<"(],-)   ";break;                      
+case';' :outstuf<<"(;,-)   ";break;
+case'.' :outstuf<<"(.,-)   ";break;
+case',' :outstuf<<"(,,-)   ";break;
+case':' :outstuf<<"(:,-)   ";break;
+case'#' :outstuf<<"(#,-)   ";break;
+case'{' :outstuf<<"({,-)   ";break;
+case'}' :outstuf<<"(},-)   ";break;
+case'>' :
+	{
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(rlop,>=)   ";
+		else 
+		{
+			outstuf<<"(rlop,>)   ";
+			flag=1;
+		}    
+	}break;
+case'<' :
+	{ 
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=') 
+			outstuf<<"(rlop,<=)   ";
+		else 
+		{
+			outstuf<<"(rlop,<)   ";
+			flag=1;
+		}     
+	}break;      
+case '!':
+	{
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=')
+			outstuf<<"(rlop,!=)   ";
+		else
+		{
+			outstuf<<"(not,-)   ";
+			flag=1;
+		}
+	}break;
+case '=':
+	{
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='=')
+			outstuf<<"(rlop,=)   ";
+		else
+		{
+			outstuf<<"(=,-)   ";
+			flag=1;
+		}
+	}break;
+case '|':
+	{
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='|')
+			outstuf<<"(or,-)   ";
+		else
+		{
+			cout<<endl;
+			cout<<"在第"<<Line_Num<<"行"<<Row_Num-1<<"列有无法识别的字符。"<<endl;
+			cout<<endl;
+		}
+	}break;
+case '&':
+	{
+		instuf.get(ch);
+		Row_Num++;
+		if(ch=='&')
+			outstuf<<"(and,-)   ";
+		else 
+		{
+			cout<<endl;
+			cout<<"在第"<<Line_Num<<"行"<<Row_Num-1<<"列有无法识别的字符。"<<endl;
+			cout<<endl;
+		}
+	}break;
+case'/' :                             //跳过注释部分                                                                 
+	{
+		instuf.get(ch);  
+		Row_Num++;
+		if(ch=='/')
+		{
+			while(ch!='\n')  
+			{
+				instuf.get(ch);
+			} 
+			Line_Num++;
+			Row_Num=0;
+		}
+		else if(ch=='=')
+		{
+			outstuf<<"(/=,-)   ";
+		}
+		else if(ch=='*')
+		{
+			int ad=25;                               //用/*····*/最多只能注释25个字符
+			while(ad)
+			{
+				instuf.get(ch);
+				Row_Num++;
+				if(ch=='*')
+				{
+					instuf.get(ch);
+					Row_Num++;
+					if(ch=='/')
+						break;
+				}
+				if(ch=='\n')
+				{
+					Line_Num++;                       //当出现换行符时，Line_Num++表示行数自加1
+					Row_Num=0;                        //当出现换行符时，Row_Num表示的列数置零
+					instuf.get(ch);
+					Row_Num++;
+				}  
+				ad--;
+			}
+			if(ad==0)
+				flag=1;
+		}
+			else
+		{
+			outstuf<<"(/,-)   ";
+			flag=1;
+		}
+	}break;  
+case '@':
+	break;
+default :{
+	cout<<endl;
+	cout<<"在第"<<Line_Num<<"行"<<Row_Num<<"列有无法识别的字符。"<<endl;
+	cout<<endl;
+	system("color  1B");
+		 } 
+		} 
+		if(!flag)
+		{
+			instuf.get(ch);
+			Row_Num++;
+		}
+}
+instuf.close();
+outstuf.close();
+}
+
